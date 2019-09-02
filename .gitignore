@@ -3,3 +3,6 @@ PubSubLite/x64/
 PubSubLite/.vs/
 .vs/
 *.user
+*.exe
+*.ilk
+*.pdb
