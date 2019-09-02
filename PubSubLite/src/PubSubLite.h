@@ -26,16 +26,6 @@ enum class Error : uint32_t
     kUnsuccess
 };
 
-struct PublisherInfo
-{
-
-};
-
-struct SubscriberInfo
-{
-
-};
-
 struct ChannelInfo
 {
     ChannelInfo()
@@ -57,10 +47,11 @@ public:
 
     static Error CreateChannel(_In_ const std::wstring& channelName, _In_opt_ uint32_t flushTime = kDefaultFlushTime, _In_opt_ uint32_t maxBufferSize = kDefaultMaxBufferSize);
     static Error UpdateChannel(_In_ const std::wstring& channelName, _In_ uint32_t flushTime, _In_ uint32_t maxBufferSize);
-    //Error Publish(_In_ std::wstring& channelName, _In_ );
+    //static Error DeleteChannel();
+    static Error Publish(_In_ std::wstring& channelName, _In_ const uint8_t* data, _In_ uint32_t dataSize);
 
 private:
-    static ChannelInfo* ExistChannel_(_In_ const std::wstring& channelName);
+    static ChannelInfo* SearchChannel_(_In_ const std::wstring& channelName);
 
 private:
     static ::CRITICAL_SECTION channelInfoListSync_;
