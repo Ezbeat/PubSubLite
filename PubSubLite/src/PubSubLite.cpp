@@ -13,6 +13,8 @@ EzPubSub::Error EzPubSub::PubSubLite::CreateChannel(
     _In_opt_ uint32_t maxBufferedDataSize /*= kDefaultMaxBufferedDataSize*/
 )
 {
+    // ...ing 채널이 만들어 질때마다 채널에 해당되는 publishedData를 subscriber에 밀어주는 스레드가 필요함
+
     Error retValue = Error::kUnsuccess;
 
     ChannelInfo channelInfo;
