@@ -21,11 +21,14 @@ enum class Error : uint32_t
 {
     kSuccess = 0x00000000,
     kExistChannel,
+    kExistSubscriber,
 
     kUnsuccess = 0x80000000,
     kNotExistChannel,
     kNotEnoughBufferSize
 };
+
+typedef void(*SUBSCRIBER_CALLBACK)(_In_ const uint8_t* data, _In_ uint32_t dataSize);
 
 struct ChannelInfo
 {
@@ -42,21 +45,28 @@ struct ChannelInfo
 
     uint32_t currentBufferedDataSize;
     std::list<std::vector<uint8_t>> publishedDataList;
+
+    std::list<SUBSCRIBER_CALLBACK> subscriberCallbackList;
 };
 
 class PubSubLite
 {
 public:
-    PubSubLite();
-    ~PubSubLite();
-
+    // Channel Method
     static Error CreateChannel(_In_ const std::wstring& channelName, _In_opt_ uint32_t flushTime = kDefaultFlushTime, _In_opt_ uint32_t maxBufferedDataSize = kDefaultMaxBufferedDataSize);
     static Error UpdateChannel(_In_ const std::wstring& channelName, _In_ uint32_t flushTime, _In_ uint32_t maxDataSize);
     //static Error DeleteChannel();
-    static Error PublishData(_In_ std::wstring& channelName, _In_ const uint8_t* data, _In_ uint32_t dataSize);
+
+    // Publisher Method
+    static Error PublishData(_In_ const std::wstring& channelName, _In_ const uint8_t* data, _In_ uint32_t dataSize);
+
+    // Subscriber Method
+    static Error RegisterSubscriber(_In_ const std::wstring& channelName, _In_ const SUBSCRIBER_CALLBACK subscriberCallback);
+    static Error UnregisterSubscriber(_In_ const std::wstring& channelName, _In_ const SUBSCRIBER_CALLBACK subscriberCallback);
 
 private:
-    static ChannelInfo* SearchChannel_(_In_ const std::wstring& channelName);
+    static ChannelInfo* SearchChannelInfo_(_In_ const std::wstring& channelName);
+    static bool IsExistSubscriberCallback_(_In_ const ChannelInfo& channelInfo, _In_ const SUBSCRIBER_CALLBACK subscriberCallback);
 
 private:
     static ::CRITICAL_SECTION channelInfoListSync_;
