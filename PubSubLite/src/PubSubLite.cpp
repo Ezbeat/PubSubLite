@@ -20,7 +20,7 @@ EzPubSub::PubSubLite::~PubSubLite()
 EzPubSub::Error EzPubSub::PubSubLite::CreateChannel(
     _In_ const std::wstring& channelName, 
     _In_opt_ uint32_t flushTime /*= kDefaultFlushTime*/, 
-    _In_opt_ uint32_t maxBufferSize /*= kDefaultMaxBufferSize*/
+    _In_opt_ uint32_t maxBufferedDataSize /*= kDefaultMaxBufferedDataSize*/
 )
 {
     Error retValue = Error::kUnsuccess;
@@ -46,7 +46,7 @@ EzPubSub::Error EzPubSub::PubSubLite::CreateChannel(
     }
 
     channelInfo.flushTime = flushTime;
-    channelInfo.bufferSize = maxBufferSize;
+    channelInfo.maxBufferedDataSize = maxBufferedDataSize;
     channelInfoList_.insert({ channelName, channelInfo });
     ::LeaveCriticalSection(&channelInfoListSync_);
 
@@ -57,7 +57,7 @@ EzPubSub::Error EzPubSub::PubSubLite::CreateChannel(
 EzPubSub::Error EzPubSub::PubSubLite::UpdateChannel(
     _In_ const std::wstring& channelName, 
     _In_ uint32_t flushTime,
-    _In_ uint32_t maxBufferSize
+    _In_ uint32_t maxBufferedDataSize
 )
 {
     Error retValue = Error::kUnsuccess;
@@ -84,14 +84,14 @@ EzPubSub::Error EzPubSub::PubSubLite::UpdateChannel(
     }
 
     channelInfo->flushTime = flushTime;
-    channelInfo->bufferSize = maxBufferSize;
+    channelInfo->maxBufferedDataSize = maxBufferedDataSize;
     ::LeaveCriticalSection(&channelInfoListSync_);
 
     retValue = Error::kSuccess;
     return retValue;
 }
 
-EzPubSub::Error EzPubSub::PubSubLite::Publish(
+EzPubSub::Error EzPubSub::PubSubLite::PublishData(
     _In_ std::wstring& channelName, 
     _In_ const uint8_t* data, 
     _In_ uint32_t dataSize
@@ -100,6 +100,7 @@ EzPubSub::Error EzPubSub::PubSubLite::Publish(
     Error retValue = Error::kUnsuccess;
 
     ChannelInfo* channelInfo = nullptr;
+    uint32_t beDeletedDataSize = 0;
 
     if ((channelName.length() == 0) || (data == nullptr) || (dataSize == 0))
     {
@@ -120,12 +121,34 @@ EzPubSub::Error EzPubSub::PubSubLite::Publish(
         return retValue;
     }
 
-    // ...ing 여기서 Publish할 데이터를 넣어야하는데.. StructEvent의 경우 연속된 공간에 있는 데이터가 아님.
-    // templete <typename T> 로 해서 해야되나?
+    if (channelInfo->currentBufferedDataSize + dataSize > channelInfo->maxBufferedDataSize)
+    {
+        beDeletedDataSize = 0;
+        for (auto publishedDataListIter = channelInfo->publishedDataList.begin(); 
+            publishedDataListIter != channelInfo->publishedDataList.end(); 
+            publishedDataListIter++)
+        {
+            beDeletedDataSize += static_cast<uint32_t>(publishedDataListIter->size());
+            if (beDeletedDataSize >= dataSize)
+            {
+                channelInfo->publishedDataList.erase(channelInfo->publishedDataList.begin(), ++publishedDataListIter);
+                channelInfo->currentBufferedDataSize -= beDeletedDataSize;
+                break;
+            }
+        }
 
+        if (channelInfo->currentBufferedDataSize + dataSize > channelInfo->maxBufferedDataSize)
+        {
+            retValue = Error::kNotEnoughBufferSize;
+            return retValue;
+        }
+    }
+
+    channelInfo->publishedDataList.push_back({ data , data + dataSize });
+    channelInfo->currentBufferedDataSize += dataSize;
     ::LeaveCriticalSection(&channelInfoListSync_);
 
-
+    retValue = Error::kSuccess;
     return retValue;
 }
 
