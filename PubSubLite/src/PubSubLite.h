@@ -10,6 +10,7 @@
 #include <string>
 #include <unordered_map>
 #include <list>
+#include <thread>
 
 namespace EzPubSub
 {
@@ -37,12 +38,16 @@ struct ChannelInfo
     {
         flushTime = 0;
         maxBufferedDataSize = 0;
-        currentBufferedDataSize = 0;
+        isFiring = true;
+        fireThread = nullptr;
+        currentBufferedDataSize = 0;        
     }
 
     //std::wstring name; // key of list
     uint32_t flushTime;
     uint32_t maxBufferedDataSize;
+    bool isFiring;
+    std::thread* fireThread;
 
     uint32_t currentBufferedDataSize;
     std::list<std::vector<uint8_t>> publishedDataList;
@@ -57,6 +62,10 @@ public:
     static Error CreateChannel(_In_ const std::wstring& channelName, _In_opt_ uint32_t flushTime = kDefaultFlushTime, _In_opt_ uint32_t maxBufferedDataSize = kDefaultMaxBufferedDataSize);
     static Error UpdateChannel(_In_ const std::wstring& channelName, _In_ uint32_t flushTime, _In_ uint32_t maxDataSize);
     static Error DeleteChannel(_In_ const std::wstring& channelName);
+
+    // Fire Method
+    //static Error PauseFire();
+    //static Error ResumeFire();
 
     // Publisher Method
     static Error PublishData(_In_ const std::wstring& channelName, _In_ const uint8_t* data, _In_ uint32_t dataSize);

@@ -13,8 +13,6 @@ EzPubSub::Error EzPubSub::PubSubLite::CreateChannel(
     _In_opt_ uint32_t maxBufferedDataSize /*= kDefaultMaxBufferedDataSize*/
 )
 {
-    // ...ing 채널이 만들어 질때마다 채널에 해당되는 publishedData를 subscriber에 밀어주는 스레드가 필요함
-
     Error retValue = Error::kUnsuccess;
 
     ChannelInfo channelInfo;
@@ -29,6 +27,10 @@ EzPubSub::Error EzPubSub::PubSubLite::CreateChannel(
         ::InitializeCriticalSection(&channelInfoListSync_);
     }
 
+    channelInfo.flushTime = flushTime;
+    channelInfo.maxBufferedDataSize = maxBufferedDataSize;
+    //channelInfo.fireThread = new std::thread ...ing thread 만들기
+
     ::EnterCriticalSection(&channelInfoListSync_);
     if (SearchChannelInfo_(channelName) != channelInfoList_.end())
     {
@@ -37,8 +39,6 @@ EzPubSub::Error EzPubSub::PubSubLite::CreateChannel(
         return retValue;
     }
 
-    channelInfo.flushTime = flushTime;
-    channelInfo.maxBufferedDataSize = maxBufferedDataSize;
     channelInfoList_.insert({ channelName, channelInfo });
     ::LeaveCriticalSection(&channelInfoListSync_);
 
@@ -110,6 +110,11 @@ EzPubSub::Error EzPubSub::PubSubLite::DeleteChannel(
         return retValue;
     }
 
+    if (channelInfoListIter->second.fireThread != nullptr)
+    {
+        delete channelInfoListIter->second.fireThread;
+        channelInfoListIter->second.fireThread = nullptr;
+    }
     channelInfoList_.erase(channelInfoListIter);
     ::LeaveCriticalSection(&channelInfoListSync_);
 
