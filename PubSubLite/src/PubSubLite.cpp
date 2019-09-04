@@ -29,7 +29,6 @@ EzPubSub::Error EzPubSub::PubSubLite::CreateChannel(
 
     channelInfo.flushTime = flushTime;
     channelInfo.maxBufferedDataSize = maxBufferedDataSize;
-    //channelInfo.fireThread = new std::thread ...ing thread 만들기
 
     ::EnterCriticalSection(&channelInfoListSync_);
     if (SearchChannelInfo_(channelName) != channelInfoList_.end())
@@ -39,7 +38,9 @@ EzPubSub::Error EzPubSub::PubSubLite::CreateChannel(
         return retValue;
     }
 
-    channelInfoList_.insert({ channelName, channelInfo });
+    auto insertResult = channelInfoList_.insert({ channelName, channelInfo });
+    channelInfo.fireThread = new std::thread(FireThread_, &(insertResult.first->second));
+    // ...ing fireThread가 UpdateChannel이나 다른 메서드에서 find한 Iter에서 null로 나옴..
     ::LeaveCriticalSection(&channelInfoListSync_);
 
     retValue = Error::kSuccess;
@@ -304,4 +305,11 @@ std::list<EzPubSub::SUBSCRIBER_CALLBACK>::iterator EzPubSub::PubSubLite::SearchS
     }
 
     return subscriberCallbackListIter;
+}
+
+void EzPubSub::PubSubLite::FireThread_(
+    _In_ ChannelInfo* channelInfo
+)
+{
+    __debugbreak();
 }

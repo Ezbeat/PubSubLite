@@ -77,6 +77,7 @@ public:
 private:
     static std::unordered_map<std::wstring, ChannelInfo>::iterator SearchChannelInfo_(_In_ const std::wstring& channelName);
     static std::list<SUBSCRIBER_CALLBACK>::iterator SearchSubscriberCallback_(_In_ ChannelInfo& channelInfo, _In_ const SUBSCRIBER_CALLBACK subscriberCallback);
+    static void FireThread_(_In_ ChannelInfo* channelInfo);
 
 private:
     static ::CRITICAL_SECTION channelInfoListSync_;
