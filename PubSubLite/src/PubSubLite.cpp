@@ -39,8 +39,7 @@ EzPubSub::Error EzPubSub::PubSubLite::CreateChannel(
     }
 
     auto insertResult = channelInfoList_.insert({ channelName, channelInfo });
-    channelInfo.fireThread = new std::thread(FireThread_, &(insertResult.first->second));
-    // ...ing fireThread가 UpdateChannel이나 다른 메서드에서 find한 Iter에서 null로 나옴..
+    insertResult.first->second.fireThread = new std::thread(FireThread_, &(insertResult.first->second));
     ::LeaveCriticalSection(&channelInfoListSync_);
 
     retValue = Error::kSuccess;
@@ -111,8 +110,11 @@ EzPubSub::Error EzPubSub::PubSubLite::DeleteChannel(
         return retValue;
     }
 
+    // Exit and Delete FireThread of Channel
     if (channelInfoListIter->second.fireThread != nullptr)
     {
+        channelInfoListIter->second.fireStatus = FireStatus::kExit;
+        channelInfoListIter->second.fireThread->join();
         delete channelInfoListIter->second.fireThread;
         channelInfoListIter->second.fireThread = nullptr;
     }

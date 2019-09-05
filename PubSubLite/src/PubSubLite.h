@@ -30,6 +30,13 @@ enum class Error : uint32_t
     kNotEnoughBufferSize
 };
 
+enum class FireStatus
+{
+    kRunning,
+    kStop,
+    kExit
+};
+
 typedef void(*SUBSCRIBER_CALLBACK)(_In_ const uint8_t* data, _In_ uint32_t dataSize);
 
 struct ChannelInfo
@@ -38,7 +45,7 @@ struct ChannelInfo
     {
         flushTime = 0;
         maxBufferedDataSize = 0;
-        isFiring = true;
+        fireStatus = FireStatus::kRunning;
         fireThread = nullptr;
         currentBufferedDataSize = 0;        
     }
@@ -46,7 +53,7 @@ struct ChannelInfo
     //std::wstring name; // key of list
     uint32_t flushTime;
     uint32_t maxBufferedDataSize;
-    bool isFiring;
+    FireStatus fireStatus;
     std::thread* fireThread;
 
     uint32_t currentBufferedDataSize;
