@@ -114,7 +114,7 @@ EzPubSub::Error EzPubSub::PubSubLite::DeleteChannel(
     if (channelInfoListIter->second.fireThread != nullptr)
     {
         channelInfoListIter->second.fireStatus = FireStatus::kExit;
-        channelInfoListIter->second.fireThread->join();
+        channelInfoListIter->second.fireThread->join(); // ...ing join이 아니라 detach를 해야될듯.. 크리티컬섹션 때문에.. 
         delete channelInfoListIter->second.fireThread;
         channelInfoListIter->second.fireThread = nullptr;
     }
@@ -314,4 +314,5 @@ void EzPubSub::PubSubLite::FireThread_(
 )
 {
     __debugbreak();
+    // ...ing, 여기 기능 개발, PauseFire, ResumeFire 메서드도 개발
 }
