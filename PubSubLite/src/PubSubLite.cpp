@@ -114,11 +114,89 @@ EzPubSub::Error EzPubSub::PubSubLite::DeleteChannel(
     if (channelInfoListIter->second.fireThread != nullptr)
     {
         channelInfoListIter->second.fireStatus = FireStatus::kExit;
-        channelInfoListIter->second.fireThread->join(); // ...ing join이 아니라 detach를 해야될듯.. 크리티컬섹션 때문에.. 
+        ::LeaveCriticalSection(&channelInfoListSync_);
+        channelInfoListIter->second.fireThread->join();
+        ::EnterCriticalSection(&channelInfoListSync_);
         delete channelInfoListIter->second.fireThread;
         channelInfoListIter->second.fireThread = nullptr;
     }
     channelInfoList_.erase(channelInfoListIter);
+    ::LeaveCriticalSection(&channelInfoListSync_);
+
+    retValue = Error::kSuccess;
+    return retValue;
+}
+
+EzPubSub::Error EzPubSub::PubSubLite::PauseFire(
+    _In_ const std::wstring& channelName
+)
+{
+    Error retValue = Error::kUnsuccess;
+
+    std::unordered_map<std::wstring, ChannelInfo>::iterator channelInfoListIter;
+
+    if (channelName.length() == 0)
+    {
+        return retValue;
+    }
+
+    if (channelInfoListSync_.LockCount == 0)
+    {
+        ::InitializeCriticalSection(&channelInfoListSync_);
+    }
+
+    ::EnterCriticalSection(&channelInfoListSync_);
+    channelInfoListIter = SearchChannelInfo_(channelName);
+    if (channelInfoListIter == channelInfoList_.end())
+    {
+        ::LeaveCriticalSection(&channelInfoListSync_);
+        retValue = Error::kNotExistChannel;
+        return retValue;
+    }
+
+    // Do not change state if fire thread is exiting
+    if (channelInfoListIter->second.fireStatus != FireStatus::kExit)
+    {
+        channelInfoListIter->second.fireStatus = FireStatus::kStop;
+    }
+    ::LeaveCriticalSection(&channelInfoListSync_);
+
+    retValue = Error::kSuccess;
+    return retValue;
+}
+
+EzPubSub::Error EzPubSub::PubSubLite::ResumeFire(
+    _In_ const std::wstring& channelName
+)
+{
+    Error retValue = Error::kUnsuccess;
+
+    std::unordered_map<std::wstring, ChannelInfo>::iterator channelInfoListIter;
+
+    if (channelName.length() == 0)
+    {
+        return retValue;
+    }
+
+    if (channelInfoListSync_.LockCount == 0)
+    {
+        ::InitializeCriticalSection(&channelInfoListSync_);
+    }
+
+    ::EnterCriticalSection(&channelInfoListSync_);
+    channelInfoListIter = SearchChannelInfo_(channelName);
+    if (channelInfoListIter == channelInfoList_.end())
+    {
+        ::LeaveCriticalSection(&channelInfoListSync_);
+        retValue = Error::kNotExistChannel;
+        return retValue;
+    }
+
+    // Do not change state if fire thread is exiting
+    if (channelInfoListIter->second.fireStatus != FireStatus::kExit)
+    {
+        channelInfoListIter->second.fireStatus = FireStatus::kRunning;
+    }
     ::LeaveCriticalSection(&channelInfoListSync_);
 
     retValue = Error::kSuccess;
@@ -155,7 +233,7 @@ EzPubSub::Error EzPubSub::PubSubLite::PublishData(
         return retValue;
     }
 
-    // There is not enough space for data
+    // If there is not enough data space, the old data is removed from the buffer to free up space.
     if (channelInfoListIter->second.currentBufferedDataSize + dataSize > channelInfoListIter->second.maxBufferedDataSize)
     {
         beDeletedDataSize = 0;
@@ -313,6 +391,19 @@ void EzPubSub::PubSubLite::FireThread_(
     _In_ ChannelInfo* channelInfo
 )
 {
-    __debugbreak();
-    // ...ing, 여기 기능 개발, PauseFire, ResumeFire 메서드도 개발
+    while (true)
+    {
+        ::EnterCriticalSection(&channelInfoListSync_);
+        if (channelInfo->fireStatus == FireStatus::kExit)
+        {
+            ::LeaveCriticalSection(&channelInfoListSync_);
+            break;
+        }
+
+        printf("1");
+        Sleep(1000);
+        // ...ing, 여기 기능 개발, PauseFire, ResumeFire 메서드도 개발
+        ::LeaveCriticalSection(&channelInfoListSync_);
+        Sleep(1);
+    }
 }

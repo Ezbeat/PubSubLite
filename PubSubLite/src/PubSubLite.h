@@ -71,8 +71,8 @@ public:
     static Error DeleteChannel(_In_ const std::wstring& channelName);
 
     // Fire Method
-    //static Error PauseFire();
-    //static Error ResumeFire();
+    static Error PauseFire(_In_ const std::wstring& channelName);
+    static Error ResumeFire(_In_ const std::wstring& channelName);
 
     // Publisher Method
     static Error PublishData(_In_ const std::wstring& channelName, _In_ const uint8_t* data, _In_ uint32_t dataSize);
