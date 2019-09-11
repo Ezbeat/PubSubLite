@@ -1,6 +1,11 @@
 #include "src/PubSubLite.h"
 
-void SubscriberCallback(_In_ const uint8_t* data, _In_ uint32_t dataSize)
+void SubscriberCallbackFirst(_In_ const uint8_t* data, _In_ uint32_t dataSize)
+{
+
+}
+
+void SubscriberCallbackSecond(_In_ const uint8_t* data, _In_ uint32_t dataSize)
 {
 
 }
@@ -14,9 +19,10 @@ int main(void)
 
     std::wstring channelName = L"TestProvider";
     EzPubSub::PubSubLite::CreateChannel(channelName);
-    EzPubSub::PubSubLite::UpdateChannel(channelName, EzPubSub::kDefaultFlushTime, EzPubSub::kDefaultMaxBufferedDataSize);
+    //EzPubSub::PubSubLite::UpdateChannel(channelName, EzPubSub::kDefaultFlushTime, EzPubSub::kDefaultMaxBufferedDataSize);
 
-    EzPubSub::PubSubLite::RegisterSubscriber(channelName, SubscriberCallback);
+    EzPubSub::PubSubLite::RegisterSubscriber(channelName, SubscriberCallbackFirst);
+    EzPubSub::PubSubLite::RegisterSubscriber(channelName, SubscriberCallbackSecond);
 
     EzPubSub::PubSubLite::PublishData(
         channelName,
@@ -29,7 +35,7 @@ int main(void)
         static_cast<uint32_t>(stringData.length() * sizeof(char))
     );
 
-    EzPubSub::PubSubLite::UnregisterSubscriber(channelName, SubscriberCallback);
+    EzPubSub::PubSubLite::UnregisterSubscriber(channelName, SubscriberCallbackSecond);
     EzPubSub::PubSubLite::DeleteChannel(channelName);
 
 

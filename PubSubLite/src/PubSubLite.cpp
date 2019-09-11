@@ -399,11 +399,12 @@ void EzPubSub::PubSubLite::FireThread_(
             ::LeaveCriticalSection(&channelInfoListSync_);
             break;
         }
-
-        printf("1");
-        Sleep(1000);
-        // ...ing, 여기 기능 개발, PauseFire, ResumeFire 메서드도 개발
         ::LeaveCriticalSection(&channelInfoListSync_);
+
+        // ...ing, 여기 기능 개발, PauseFire, ResumeFire 메서드도 개발
+        // 고려사항.. publishedDataList에 데이터 들어갔을 때 여기서 기다리다가 풀려야함. Event 활용
+        // publishedDataList에 데이터 push, pop 시 동시에 되도록. 플래그 하나 두고 Interlock을 활용해봐야할듯..
+        
         Sleep(1);
     }
 }
