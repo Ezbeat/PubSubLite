@@ -378,7 +378,6 @@ void EzPubSub::PubSubLite::FireThread_(
         // Terminate thread if fire is exit.
         if (channelInfo->fireStatus == FireStatus::kExit)
         {
-            // [TODO] Subscriber 루틴 내부 생각하기
             ::LeaveCriticalSection(&channelInfoListSync_);
             break;
         }
@@ -391,8 +390,18 @@ void EzPubSub::PubSubLite::FireThread_(
             Sleep(copiedFlushTime);
             continue;
         }
+        else
+        {
+            AdjustDataBuffer_(channelInfo);
+            if (channelInfo->publishedDataList.size() == 0)
+            {
+                copiedFlushTime = channelInfo->flushTime;
+                ::LeaveCriticalSection(&channelInfoListSync_);
+                Sleep(copiedFlushTime);
+                continue;
+            }
+        }
 
-        AdjustDataBuffer_(channelInfo);
         copiedCallbackList = channelInfo->subscriberCallbackList;
         ::LeaveCriticalSection(&channelInfoListSync_);
 
@@ -401,7 +410,7 @@ void EzPubSub::PubSubLite::FireThread_(
         for (auto copiedCallbackListEntry : copiedCallbackList)
         {
             copiedCallbackListEntry(
-                channelInfo->publishedDataList.begin()->data(), 
+                channelInfo->publishedDataList.begin()->data(),
                 static_cast<uint32_t>(channelInfo->publishedDataList.begin()->size())
             );
         }

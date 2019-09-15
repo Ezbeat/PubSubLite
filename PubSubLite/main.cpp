@@ -1,13 +1,15 @@
 #include "src/PubSubLite.h"
 
+#include <iostream>
+
 void SubscriberCallbackFirst(_In_ const uint8_t* data, _In_ uint32_t dataSize)
 {
-
+    wprintf(L"[SUB 1] %p %d \n", data, dataSize);
 }
 
 void SubscriberCallbackSecond(_In_ const uint8_t* data, _In_ uint32_t dataSize)
 {
-
+    wprintf(L"[SUB 2] %p %d \n", data, dataSize);
 }
 
 int main(void)
@@ -35,9 +37,8 @@ int main(void)
         static_cast<uint32_t>(stringData.length() * sizeof(char))
     );
 
-    EzPubSub::PubSubLite::UnregisterSubscriber(channelName, SubscriberCallbackSecond);
+    //EzPubSub::PubSubLite::UnregisterSubscriber(channelName, SubscriberCallbackSecond);
     EzPubSub::PubSubLite::DeleteChannel(channelName);
-
 
     return 0;
 }
