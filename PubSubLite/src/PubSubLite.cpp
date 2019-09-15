@@ -147,18 +147,15 @@ EzPubSub::Error EzPubSub::PubSubLite::PauseFire(
 
     ::EnterCriticalSection(&channelInfoListSync_);
     channelInfoListIter = SearchChannelInfo_(channelName);
-    if (channelInfoListIter == channelInfoList_.end())
+    if ((channelInfoListIter == channelInfoList_.end()) ||
+        (channelInfoListIter->second.fireStatus == FireStatus::kExit))
     {
         ::LeaveCriticalSection(&channelInfoListSync_);
         retValue = Error::kNotExistChannel;
         return retValue;
     }
 
-    // Do not change state if fire thread is exiting
-    if (channelInfoListIter->second.fireStatus != FireStatus::kExit)
-    {
-        channelInfoListIter->second.fireStatus = FireStatus::kStop;
-    }
+    channelInfoListIter->second.fireStatus = FireStatus::kStop;
     ::LeaveCriticalSection(&channelInfoListSync_);
 
     retValue = Error::kSuccess;
@@ -185,18 +182,15 @@ EzPubSub::Error EzPubSub::PubSubLite::ResumeFire(
 
     ::EnterCriticalSection(&channelInfoListSync_);
     channelInfoListIter = SearchChannelInfo_(channelName);
-    if (channelInfoListIter == channelInfoList_.end())
+    if ((channelInfoListIter == channelInfoList_.end()) ||
+        (channelInfoListIter->second.fireStatus == FireStatus::kExit))
     {
         ::LeaveCriticalSection(&channelInfoListSync_);
         retValue = Error::kNotExistChannel;
         return retValue;
     }
 
-    // Do not change state if fire thread is exiting
-    if (channelInfoListIter->second.fireStatus != FireStatus::kExit)
-    {
-        channelInfoListIter->second.fireStatus = FireStatus::kRunning;
-    }
+    channelInfoListIter->second.fireStatus = FireStatus::kRunning;
     ::LeaveCriticalSection(&channelInfoListSync_);
 
     retValue = Error::kSuccess;
@@ -212,7 +206,6 @@ EzPubSub::Error EzPubSub::PubSubLite::PublishData(
     Error retValue = Error::kUnsuccess;
 
     std::unordered_map<std::wstring, ChannelInfo>::iterator channelInfoListIter;
-    uint32_t beDeletedDataSize = 0;
 
     if ((channelName.length() == 0) || (data == nullptr) || (dataSize == 0))
     {
@@ -226,39 +219,22 @@ EzPubSub::Error EzPubSub::PubSubLite::PublishData(
 
     ::EnterCriticalSection(&channelInfoListSync_);
     channelInfoListIter = SearchChannelInfo_(channelName);
-    if (channelInfoListIter == channelInfoList_.end())
+    if ((channelInfoListIter == channelInfoList_.end()) ||
+        (channelInfoListIter->second.fireStatus == FireStatus::kExit))
     {
         ::LeaveCriticalSection(&channelInfoListSync_);
         retValue = Error::kNotExistChannel;
         return retValue;
     }
-
-    // If there is not enough data space, the old data is removed from the buffer to free up space.
-    if (channelInfoListIter->second.currentBufferedDataSize + dataSize > channelInfoListIter->second.maxBufferedDataSize)
+    else if (channelInfoListIter->second.fireStatus == FireStatus::kStop)
     {
-        beDeletedDataSize = 0;
-        for (auto publishedDataListIter = channelInfoListIter->second.publishedDataList.begin();
-            publishedDataListIter != channelInfoListIter->second.publishedDataList.end();
-            publishedDataListIter++)
-        {
-            beDeletedDataSize += static_cast<uint32_t>(publishedDataListIter->size());
-            if (beDeletedDataSize >= dataSize)
-            {
-                channelInfoListIter->second.publishedDataList.erase(channelInfoListIter->second.publishedDataList.begin(), ++publishedDataListIter);
-                channelInfoListIter->second.currentBufferedDataSize -= beDeletedDataSize;
-                break;
-            }
-        }
-
-        if (channelInfoListIter->second.currentBufferedDataSize + dataSize > channelInfoListIter->second.maxBufferedDataSize)
-        {
-            retValue = Error::kNotEnoughBufferSize;
-            return retValue;
-        }
+        ::LeaveCriticalSection(&channelInfoListSync_);
+        retValue = Error::kBeStoppedFire;
+        return retValue;
     }
 
-    channelInfoListIter->second.publishedDataList.push_back({ data , data + dataSize });
     channelInfoListIter->second.currentBufferedDataSize += dataSize;
+    channelInfoListIter->second.publishedDataList.push_back({ data , data + dataSize });
     ::LeaveCriticalSection(&channelInfoListSync_);
 
     retValue = Error::kSuccess;
@@ -286,7 +262,8 @@ EzPubSub::Error EzPubSub::PubSubLite::RegisterSubscriber(
 
     ::EnterCriticalSection(&channelInfoListSync_);
     channelInfoListIter = SearchChannelInfo_(channelName);
-    if (channelInfoListIter == channelInfoList_.end())
+    if ((channelInfoListIter == channelInfoList_.end()) ||
+        (channelInfoListIter->second.fireStatus == FireStatus::kExit))
     {
         ::LeaveCriticalSection(&channelInfoListSync_);
         retValue = Error::kNotExistChannel;
@@ -330,7 +307,8 @@ EzPubSub::Error EzPubSub::PubSubLite::UnregisterSubscriber(
 
     ::EnterCriticalSection(&channelInfoListSync_);
     channelInfoListIter = SearchChannelInfo_(channelName);
-    if (channelInfoListIter == channelInfoList_.end())
+    if ((channelInfoListIter == channelInfoList_.end()) ||
+        (channelInfoListIter->second.fireStatus == FireStatus::kExit))
     {
         ::LeaveCriticalSection(&channelInfoListSync_);
         retValue = Error::kNotExistChannel;
@@ -388,23 +366,83 @@ std::list<EzPubSub::SUBSCRIBER_CALLBACK>::iterator EzPubSub::PubSubLite::SearchS
 }
 
 void EzPubSub::PubSubLite::FireThread_(
-    _In_ ChannelInfo* channelInfo
+    ChannelInfo* channelInfo
 )
 {
+    uint32_t copiedFlushTime = 0;
+    std::list<SUBSCRIBER_CALLBACK> copiedCallbackList;
+
     while (true)
     {
         ::EnterCriticalSection(&channelInfoListSync_);
+        // Terminate thread if fire is exit.
         if (channelInfo->fireStatus == FireStatus::kExit)
         {
+            // [TODO] Subscriber 루틴 내부 생각하기
             ::LeaveCriticalSection(&channelInfoListSync_);
             break;
         }
+
+        // If there is no published data, sleep by flush time.
+        if (channelInfo->publishedDataList.size() == 0)
+        {
+            copiedFlushTime = channelInfo->flushTime;
+            ::LeaveCriticalSection(&channelInfoListSync_);
+            Sleep(copiedFlushTime);
+            continue;
+        }
+
+        AdjustDataBuffer_(channelInfo);
+        copiedCallbackList = channelInfo->subscriberCallbackList;
         ::LeaveCriticalSection(&channelInfoListSync_);
 
-        // ...ing, 여기 기능 개발, PauseFire, ResumeFire 메서드도 개발
-        // 고려사항.. publishedDataList에 데이터 들어갔을 때 여기서 기다리다가 풀려야함. Event 활용
-        // publishedDataList에 데이터 push, pop 시 동시에 되도록. 플래그 하나 두고 Interlock을 활용해봐야할듯..
-        
-        Sleep(1);
+        // While the subscriber is processing published data, it does not synchronize to store the data sent by the publisher in the buffer.
+        // Therefore, it never modifies the front of other methods published data buffer list.
+        for (auto copiedCallbackListEntry : copiedCallbackList)
+        {
+            copiedCallbackListEntry(
+                channelInfo->publishedDataList.begin()->data(), 
+                static_cast<uint32_t>(channelInfo->publishedDataList.begin()->size())
+            );
+        }
+
+        ::EnterCriticalSection(&channelInfoListSync_);
+        channelInfo->currentBufferedDataSize -= static_cast<uint32_t>(channelInfo->publishedDataList.begin()->size());
+        channelInfo->publishedDataList.pop_front();
+        channelInfo->firedDataCount++;
+        ::LeaveCriticalSection(&channelInfoListSync_);
     }
+}
+
+void EzPubSub::PubSubLite::AdjustDataBuffer_(
+    _Inout_ ChannelInfo* channelInfo
+)
+{
+    /*
+        The caller using this method must synchronize.
+    */
+
+    size_t beforeDeletionDataListSize = 0;
+    uint32_t beDeletedDataSize = 0;
+
+    if (channelInfo->currentBufferedDataSize > channelInfo->maxBufferedDataSize)
+    {
+        beforeDeletionDataListSize = channelInfo->publishedDataList.size();
+        beDeletedDataSize = 0;
+        for (auto publishedDataListIter = channelInfo->publishedDataList.begin();
+            publishedDataListIter != channelInfo->publishedDataList.end();
+            publishedDataListIter++)
+        {
+            beDeletedDataSize += static_cast<uint32_t>(publishedDataListIter->size());
+            if ((channelInfo->currentBufferedDataSize - beDeletedDataSize) <= channelInfo->maxBufferedDataSize)
+            {
+                channelInfo->currentBufferedDataSize -= beDeletedDataSize;
+                channelInfo->publishedDataList.erase(channelInfo->publishedDataList.begin(), ++publishedDataListIter);
+                channelInfo->lostDataCount += static_cast<uint32_t>(beforeDeletionDataListSize - channelInfo->publishedDataList.size());
+                return;
+            }
+        }
+    }
+
+    return;
 }

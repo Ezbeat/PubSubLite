@@ -21,13 +21,14 @@ const uint32_t kDefaultMaxBufferedDataSize = 104857600; // 100 MB, Unit: Byte
 enum class Error : uint32_t
 {
     kSuccess = 0x00000000,
-    kExistChannel,
-    kExistSubscriber,
 
     kUnsuccess = 0x80000000,
+    kExistChannel,
+    kExistSubscriber,
     kNotExistChannel,
     kNotExistSubscriber,
-    kNotEnoughBufferSize
+    kNotEnoughBufferSize,
+    kBeStoppedFire
 };
 
 enum class FireStatus
@@ -47,6 +48,8 @@ struct ChannelInfo
         maxBufferedDataSize = 0;
         fireStatus = FireStatus::kRunning;
         fireThread = nullptr;
+        firedDataCount = 0;
+        lostDataCount = 0;
         currentBufferedDataSize = 0;        
     }
 
@@ -55,6 +58,8 @@ struct ChannelInfo
     uint32_t maxBufferedDataSize;
     FireStatus fireStatus;
     std::thread* fireThread;
+    uint32_t firedDataCount;
+    uint32_t lostDataCount;
 
     uint32_t currentBufferedDataSize;
     std::list<std::vector<uint8_t>> publishedDataList;
@@ -84,7 +89,8 @@ public:
 private:
     static std::unordered_map<std::wstring, ChannelInfo>::iterator SearchChannelInfo_(_In_ const std::wstring& channelName);
     static std::list<SUBSCRIBER_CALLBACK>::iterator SearchSubscriberCallback_(_In_ ChannelInfo& channelInfo, _In_ const SUBSCRIBER_CALLBACK subscriberCallback);
-    static void FireThread_(_In_ ChannelInfo* channelInfo);
+    static void FireThread_(ChannelInfo* channelInfo);
+    static void AdjustDataBuffer_(_Inout_ ChannelInfo* channelInfo);
 
 private:
     static ::CRITICAL_SECTION channelInfoListSync_;
