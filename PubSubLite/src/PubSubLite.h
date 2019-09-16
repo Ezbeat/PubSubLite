@@ -15,8 +15,10 @@
 namespace EzPubSub
 {
 
+const uint32_t kSpinCount = 2000;
+
 const uint32_t kDefaultFlushTime = 1000; // 1 Second, Unit: Millisecond
-const uint32_t kDefaultMaxBufferedDataSize = 104857600; // 100 MB, Unit: Byte
+const uint32_t kDefaultMaxBufferedDataSize = 10485760; // 10 MB, Unit: Byte
 
 enum class Error : uint32_t
 {
@@ -85,6 +87,10 @@ public:
     // Subscriber Method
     static Error RegisterSubscriber(_In_ const std::wstring& channelName, _In_ const SUBSCRIBER_CALLBACK subscriberCallback);
     static Error UnregisterSubscriber(_In_ const std::wstring& channelName, _In_ const SUBSCRIBER_CALLBACK subscriberCallback);
+
+    // Getter
+    static Error GetFiredDataCount(_In_ const std::wstring& channelName, _Out_ uint32_t& firedDataCount);
+    static Error GetLostDataCount(_In_ const std::wstring& channelName, _Out_ uint32_t& lostDataCount);
 
 private:
     static std::unordered_map<std::wstring, ChannelInfo>::iterator SearchChannelInfo_(_In_ const std::wstring& channelName);

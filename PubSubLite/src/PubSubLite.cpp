@@ -24,7 +24,7 @@ EzPubSub::Error EzPubSub::PubSubLite::CreateChannel(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSection(&channelInfoListSync_);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
     }
 
     channelInfo.flushTime = flushTime;
@@ -63,7 +63,7 @@ EzPubSub::Error EzPubSub::PubSubLite::UpdateChannel(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSection(&channelInfoListSync_);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);
@@ -98,7 +98,7 @@ EzPubSub::Error EzPubSub::PubSubLite::DeleteChannel(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSection(&channelInfoListSync_);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);
@@ -142,7 +142,7 @@ EzPubSub::Error EzPubSub::PubSubLite::PauseFire(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSection(&channelInfoListSync_);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);
@@ -177,7 +177,7 @@ EzPubSub::Error EzPubSub::PubSubLite::ResumeFire(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSection(&channelInfoListSync_);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);
@@ -214,7 +214,7 @@ EzPubSub::Error EzPubSub::PubSubLite::PublishData(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSection(&channelInfoListSync_);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);
@@ -257,7 +257,7 @@ EzPubSub::Error EzPubSub::PubSubLite::RegisterSubscriber(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSection(&channelInfoListSync_);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);
@@ -302,7 +302,7 @@ EzPubSub::Error EzPubSub::PubSubLite::UnregisterSubscriber(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSection(&channelInfoListSync_);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);
@@ -324,6 +324,78 @@ EzPubSub::Error EzPubSub::PubSubLite::UnregisterSubscriber(
     }
 
     channelInfoListIter->second.subscriberCallbackList.erase(subscriberCallbackListIter);
+    ::LeaveCriticalSection(&channelInfoListSync_);
+
+    retValue = Error::kSuccess;
+    return retValue;
+}
+
+EzPubSub::Error EzPubSub::PubSubLite::GetFiredDataCount(
+    _In_ const std::wstring& channelName, 
+    _Out_ uint32_t& firedDataCount
+)
+{
+    Error retValue = Error::kUnsuccess;
+
+    std::unordered_map<std::wstring, ChannelInfo>::iterator channelInfoListIter;
+
+    if (channelName.length() == 0)
+    {
+        return retValue;
+    }
+
+    if (channelInfoListSync_.LockCount == 0)
+    {
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
+    }
+
+    ::EnterCriticalSection(&channelInfoListSync_);
+    channelInfoListIter = SearchChannelInfo_(channelName);
+    if ((channelInfoListIter == channelInfoList_.end()) ||
+        (channelInfoListIter->second.fireStatus == FireStatus::kExit))
+    {
+        ::LeaveCriticalSection(&channelInfoListSync_);
+        retValue = Error::kNotExistChannel;
+        return retValue;
+    }
+
+    firedDataCount = channelInfoListIter->second.firedDataCount;
+    ::LeaveCriticalSection(&channelInfoListSync_);
+
+    retValue = Error::kSuccess;
+    return retValue;
+}
+
+EzPubSub::Error EzPubSub::PubSubLite::GetLostDataCount(
+    _In_ const std::wstring& channelName, 
+    _Out_ uint32_t& lostDataCount
+)
+{
+    Error retValue = Error::kUnsuccess;
+
+    std::unordered_map<std::wstring, ChannelInfo>::iterator channelInfoListIter;
+
+    if (channelName.length() == 0)
+    {
+        return retValue;
+    }
+
+    if (channelInfoListSync_.LockCount == 0)
+    {
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
+    }
+
+    ::EnterCriticalSection(&channelInfoListSync_);
+    channelInfoListIter = SearchChannelInfo_(channelName);
+    if ((channelInfoListIter == channelInfoList_.end()) ||
+        (channelInfoListIter->second.fireStatus == FireStatus::kExit))
+    {
+        ::LeaveCriticalSection(&channelInfoListSync_);
+        retValue = Error::kNotExistChannel;
+        return retValue;
+    }
+
+    lostDataCount = channelInfoListIter->second.lostDataCount;
     ::LeaveCriticalSection(&channelInfoListSync_);
 
     retValue = Error::kSuccess;
