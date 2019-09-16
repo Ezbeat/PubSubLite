@@ -24,7 +24,7 @@ EzPubSub::Error EzPubSub::PubSubLite::CreateChannel(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSyncSpinCount);
     }
 
     channelInfo.flushTime = flushTime;
@@ -63,7 +63,7 @@ EzPubSub::Error EzPubSub::PubSubLite::UpdateChannel(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSyncSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);
@@ -98,7 +98,7 @@ EzPubSub::Error EzPubSub::PubSubLite::DeleteChannel(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSyncSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);
@@ -142,7 +142,7 @@ EzPubSub::Error EzPubSub::PubSubLite::PauseFire(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSyncSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);
@@ -177,7 +177,7 @@ EzPubSub::Error EzPubSub::PubSubLite::ResumeFire(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSyncSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);
@@ -214,7 +214,7 @@ EzPubSub::Error EzPubSub::PubSubLite::PublishData(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSyncSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);
@@ -257,7 +257,7 @@ EzPubSub::Error EzPubSub::PubSubLite::RegisterSubscriber(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSyncSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);
@@ -302,7 +302,7 @@ EzPubSub::Error EzPubSub::PubSubLite::UnregisterSubscriber(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSyncSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);
@@ -346,7 +346,7 @@ EzPubSub::Error EzPubSub::PubSubLite::GetFiredDataCount(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSyncSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);
@@ -382,7 +382,7 @@ EzPubSub::Error EzPubSub::PubSubLite::GetLostDataCount(
 
     if (channelInfoListSync_.LockCount == 0)
     {
-        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSpinCount);
+        ::InitializeCriticalSectionAndSpinCount(&channelInfoListSync_, kSyncSpinCount);
     }
 
     ::EnterCriticalSection(&channelInfoListSync_);

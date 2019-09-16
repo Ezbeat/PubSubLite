@@ -15,7 +15,7 @@
 namespace EzPubSub
 {
 
-const uint32_t kSpinCount = 2000;
+const uint32_t kSyncSpinCount = 2000;
 
 const uint32_t kDefaultFlushTime = 1000; // 1 Second, Unit: Millisecond
 const uint32_t kDefaultMaxBufferedDataSize = 10485760; // 10 MB, Unit: Byte

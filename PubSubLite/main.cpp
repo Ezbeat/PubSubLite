@@ -16,17 +16,17 @@ int main(void)
 {
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
-    std::string stringData = "ezbeattest_";
+    std::string stringData = "teststring_";
     std::string publishData;
 
-    std::wstring channelName = L"TestProvider";
+    std::wstring channelName = L"TestChannel";
     EzPubSub::PubSubLite::CreateChannel(channelName);
     //EzPubSub::PubSubLite::UpdateChannel(channelName, EzPubSub::kDefaultFlushTime, EzPubSub::kDefaultMaxBufferedDataSize);
 
     EzPubSub::PubSubLite::RegisterSubscriber(channelName, SubscriberCallbackFirst);
     EzPubSub::PubSubLite::RegisterSubscriber(channelName, SubscriberCallbackSecond);
 
-    for (uint32_t index = 0; index < 1000000; index++)
+    for (uint32_t index = 0; index < 100000; index++)
     {
         publishData.assign(stringData + std::to_string(index));
         EzPubSub::PubSubLite::PublishData(
@@ -35,6 +35,8 @@ int main(void)
             static_cast<uint32_t>(publishData.size()) + 1
         );
     }
+
+    //Sleep(10000);
 
     uint32_t firedDataCount = 0;
     uint32_t lostDataCount = 0;
