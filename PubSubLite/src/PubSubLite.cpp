@@ -68,7 +68,8 @@ EzPubSub::Error EzPubSub::PubSubLite::UpdateChannel(
 
     ::EnterCriticalSection(&channelInfoListSync_);
     channelInfoListIter = SearchChannelInfo_(channelName);
-    if (channelInfoListIter == channelInfoList_.end())
+    if ((channelInfoListIter == channelInfoList_.end()) ||
+        (channelInfoListIter->second.fireStatus == FireStatus::kExit))
     {
         ::LeaveCriticalSection(&channelInfoListSync_);
         retValue = Error::kNotExistChannel;
