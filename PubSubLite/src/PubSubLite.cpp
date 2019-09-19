@@ -201,12 +201,14 @@ EzPubSub::Error EzPubSub::PubSubLite::ResumeFire(
 EzPubSub::Error EzPubSub::PubSubLite::PublishData(
     _In_ const std::wstring& channelName,
     _In_ const uint8_t* data,
-    _In_ uint32_t dataSize
+    _In_ uint32_t dataSize,
+    _In_opt_ const std::vector<SUBSCRIBER_CALLBACK>* fireCallbackList /*= nullptr*/
 )
 {
     Error retValue = Error::kUnsuccess;
 
     std::unordered_map<std::wstring, ChannelInfo>::iterator channelInfoListIter;
+    const std::vector<SUBSCRIBER_CALLBACK> emptySubscriberList;
 
     if ((channelName.length() == 0) || (data == nullptr) || (dataSize == 0))
     {
@@ -235,7 +237,14 @@ EzPubSub::Error EzPubSub::PubSubLite::PublishData(
     }
 
     channelInfoListIter->second.currentBufferedDataSize += dataSize;
-    channelInfoListIter->second.publishedDataList.push_back({ data , data + dataSize });
+    if (fireCallbackList != nullptr)
+    {
+        channelInfoListIter->second.publishedDataList.push_back({ *fireCallbackList, { data , data + dataSize } });
+    }
+    else
+    {
+        channelInfoListIter->second.publishedDataList.push_back({ emptySubscriberList,{ data , data + dataSize } });
+    }
     ::LeaveCriticalSection(&channelInfoListSync_);
 
     retValue = Error::kSuccess;
@@ -332,7 +341,7 @@ EzPubSub::Error EzPubSub::PubSubLite::UnregisterSubscriber(
 }
 
 EzPubSub::Error EzPubSub::PubSubLite::GetFiredDataCount(
-    _In_ const std::wstring& channelName, 
+    _In_ const std::wstring& channelName,
     _Out_ uint32_t& firedDataCount
 )
 {
@@ -368,7 +377,7 @@ EzPubSub::Error EzPubSub::PubSubLite::GetFiredDataCount(
 }
 
 EzPubSub::Error EzPubSub::PubSubLite::GetLostDataCount(
-    _In_ const std::wstring& channelName, 
+    _In_ const std::wstring& channelName,
     _Out_ uint32_t& lostDataCount
 )
 {
@@ -482,14 +491,31 @@ void EzPubSub::PubSubLite::FireThread_(
         // Therefore, it never modifies the front of other methods published data buffer list.
         for (auto copiedCallbackListEntry : copiedCallbackList)
         {
-            copiedCallbackListEntry(
-                channelInfo->publishedDataList.begin()->data(),
-                static_cast<uint32_t>(channelInfo->publishedDataList.begin()->size())
-            );
+            if (channelInfo->publishedDataList.begin()->first.size() == 0)
+            {
+                copiedCallbackListEntry(
+                    channelInfo->publishedDataList.begin()->second.data(),
+                    static_cast<uint32_t>(channelInfo->publishedDataList.begin()->second.size())
+                );
+            }
+            else
+            {
+                // Not all callbacks fired published data
+                for (auto fireCallbackListEntry : channelInfo->publishedDataList.begin()->first)
+                {
+                    if (fireCallbackListEntry == copiedCallbackListEntry)
+                    {
+                        copiedCallbackListEntry(
+                            channelInfo->publishedDataList.begin()->second.data(),
+                            static_cast<uint32_t>(channelInfo->publishedDataList.begin()->second.size())
+                        );
+                    }
+                }
+            }
         }
 
         ::EnterCriticalSection(&channelInfoListSync_);
-        channelInfo->currentBufferedDataSize -= static_cast<uint32_t>(channelInfo->publishedDataList.begin()->size());
+        channelInfo->currentBufferedDataSize -= static_cast<uint32_t>(channelInfo->publishedDataList.begin()->second.size());
         channelInfo->publishedDataList.pop_front();
         channelInfo->firedDataCount++;
         ::LeaveCriticalSection(&channelInfoListSync_);
@@ -515,7 +541,7 @@ void EzPubSub::PubSubLite::AdjustDataBuffer_(
             publishedDataListIter != channelInfo->publishedDataList.end();
             publishedDataListIter++)
         {
-            beDeletedDataSize += static_cast<uint32_t>(publishedDataListIter->size());
+            beDeletedDataSize += static_cast<uint32_t>(publishedDataListIter->second.size());
             if ((channelInfo->currentBufferedDataSize - beDeletedDataSize) <= channelInfo->maxBufferedDataSize)
             {
                 channelInfo->currentBufferedDataSize -= beDeletedDataSize;

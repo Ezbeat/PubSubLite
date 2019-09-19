@@ -42,6 +42,7 @@ enum class FireStatus
 
 typedef void(*SUBSCRIBER_CALLBACK)(_In_ const uint8_t* data, _In_ uint32_t dataSize);
 
+using PublishedData = std::pair<const std::vector<SUBSCRIBER_CALLBACK>, const std::vector<uint8_t>>; // Fired subscriber callback list(zero is all), Published data
 struct ChannelInfo
 {
     ChannelInfo()
@@ -52,7 +53,7 @@ struct ChannelInfo
         fireThread = nullptr;
         firedDataCount = 0;
         lostDataCount = 0;
-        currentBufferedDataSize = 0;        
+        currentBufferedDataSize = 0;
     }
 
     //std::wstring name; // key of list
@@ -64,7 +65,7 @@ struct ChannelInfo
     uint32_t lostDataCount;
 
     uint32_t currentBufferedDataSize;
-    std::list<std::vector<uint8_t>> publishedDataList;
+    std::list<PublishedData> publishedDataList;
 
     std::list<SUBSCRIBER_CALLBACK> subscriberCallbackList;
 };
@@ -82,7 +83,7 @@ public:
     static Error ResumeFire(_In_ const std::wstring& channelName);
 
     // Publisher Method
-    static Error PublishData(_In_ const std::wstring& channelName, _In_ const uint8_t* data, _In_ uint32_t dataSize);
+    static Error PublishData(_In_ const std::wstring& channelName, _In_ const uint8_t* data, _In_ uint32_t dataSize, _In_opt_ const std::vector<SUBSCRIBER_CALLBACK>* fireCallbackList = nullptr);
 
     // Subscriber Method
     static Error RegisterSubscriber(_In_ const std::wstring& channelName, _In_ const SUBSCRIBER_CALLBACK subscriberCallback);

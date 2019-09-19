@@ -18,6 +18,7 @@ int main(void)
 
     std::string stringData = "teststring_";
     std::string publishData;
+    std::vector<EzPubSub::SUBSCRIBER_CALLBACK> fireCallbackList = { SubscriberCallbackFirst, SubscriberCallbackSecond };
 
     std::wstring channelName = L"TestChannel";
     EzPubSub::PubSubLite::CreateChannel(channelName);
@@ -30,13 +31,14 @@ int main(void)
     {
         publishData.assign(stringData + std::to_string(index));
         EzPubSub::PubSubLite::PublishData(
-            channelName, 
-            reinterpret_cast<const uint8_t*>(publishData.c_str()), 
-            static_cast<uint32_t>(publishData.size()) + 1
+            channelName,
+            reinterpret_cast<const uint8_t*>(publishData.c_str()),
+            static_cast<uint32_t>(publishData.size()) + 1,
+            &fireCallbackList
         );
     }
 
-    //Sleep(10000);
+    Sleep(10000);
 
     uint32_t firedDataCount = 0;
     uint32_t lostDataCount = 0;
