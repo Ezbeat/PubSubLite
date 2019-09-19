@@ -37,12 +37,17 @@ If published data is in the channel's buffer, the data is passed sequentially to
 static Error PublishData(
   _In_ const std::wstring& channelName, 
   _In_ const uint8_t* data, 
-  _In_ uint32_t dataSize
+  _In_ uint32_t dataSize, 
+  _In_opt_ const std::vector<SUBSCRIBER_CALLBACK>* fireCallbackList = nullptr
 );
 ```
 As it is named Lite, we want to provide as simple a feature as possible.  
 Therefore, the data to be published can only be transferred as a buffer pointer, and the data size in the buffer.  
 The data passed is copied internally into "std::vector", and the allocated "std::vector" is added to the end of "std::list".
+
+* fireCallbackList  
+When passing published data to registered subscribers, this parameter selects the subscriber callback to be delivered.
+If nullptr is passed, published data is delivered to all registered subscribers.
 
 **4. Unregister Subscriber or Delete Channel.**
 ```
