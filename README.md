@@ -63,6 +63,8 @@ static Error DeleteChannel(
 If you delete a channel, registered subscribers are also removed automatically,  
 so you do not need to call UnregisterSubscriber before calling DeleteChannel.  
 
+※ If CreateChannel succeeds, a FireThread is created that sends data to the Subscriber, so if you do not call DeleteChannel, a memory leak occurs.  
+
 ## Etc method.
 * **UpdateChannel**  
 Change the flushTime and maxBufferedDataSize of already created channels.
