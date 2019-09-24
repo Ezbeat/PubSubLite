@@ -41,7 +41,7 @@ enum class FireStatus
     kExit
 };
 
-typedef void(*SUBSCRIBER_CALLBACK)(_In_ const uint8_t* data, _In_ uint32_t dataSize, _In_opt_ void* extDataProcessor);
+typedef void(*SUBSCRIBER_CALLBACK)(_In_ const uint8_t* data, _In_ uint32_t dataSize, _In_opt_ void* userContext);
 
 // External Data Process Pointer(optional), Fired subscriber callback list(optional), Published data
 using PublishedData = std::tuple<void*, const std::vector<SUBSCRIBER_CALLBACK>, const std::vector<uint8_t>>;
@@ -89,7 +89,7 @@ public:
         _In_ const std::wstring& channelName,
         _In_ const uint8_t* data,
         _In_ uint32_t dataSize,
-        _In_opt_ void* extDataProcessor = nullptr,
+        _In_opt_ void* userContext = nullptr,
         _In_opt_ const std::vector<SUBSCRIBER_CALLBACK>* fireCallbackList = nullptr
     );
 

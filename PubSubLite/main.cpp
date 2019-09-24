@@ -16,21 +16,21 @@ public:
 private:
 };
 
-void SubscriberCallbackFirst(_In_ const uint8_t* data, _In_ uint32_t dataSize, _In_opt_ void* extDataProcessor)
+void SubscriberCallbackFirst(_In_ const uint8_t* data, _In_ uint32_t dataSize, _In_opt_ void* userContext)
 {
     printf("[SUB 1] %p %d %s \n", data, dataSize, reinterpret_cast<const char*>(data));
-    if (extDataProcessor != nullptr)
+    if (userContext != nullptr)
     {
-        static_cast<ExtDataProcessor*>(extDataProcessor)->Print();
+        static_cast<ExtDataProcessor*>(userContext)->Print();
     }
 }
 
-void SubscriberCallbackSecond(_In_ const uint8_t* data, _In_ uint32_t dataSize, _In_opt_ void* extDataProcessor)
+void SubscriberCallbackSecond(_In_ const uint8_t* data, _In_ uint32_t dataSize, _In_opt_ void* userContext)
 {
     printf("[SUB 2] %p %d %s \n", data, dataSize, reinterpret_cast<const char*>(data));
-    if (extDataProcessor != nullptr)
+    if (userContext != nullptr)
     {
-        static_cast<ExtDataProcessor*>(extDataProcessor)->Print();
+        static_cast<ExtDataProcessor*>(userContext)->Print();
     }
 }
 

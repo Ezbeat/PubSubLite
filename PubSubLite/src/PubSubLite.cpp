@@ -202,7 +202,7 @@ EzPubSub::Error EzPubSub::PubSubLite::PublishData(
     _In_ const std::wstring& channelName,
     _In_ const uint8_t* data,
     _In_ uint32_t dataSize,
-    _In_opt_ void* extDataProcessor /*= nullptr*/,
+    _In_opt_ void* userContext /*= nullptr*/,
     _In_opt_ const std::vector<SUBSCRIBER_CALLBACK>* fireCallbackList /*= nullptr*/
 )
 {
@@ -240,11 +240,11 @@ EzPubSub::Error EzPubSub::PubSubLite::PublishData(
     channelInfoListIter->second.currentBufferedDataSize += dataSize;
     if (fireCallbackList != nullptr)
     {
-        channelInfoListIter->second.publishedDataList.push_back({ extDataProcessor, *fireCallbackList, { data , data + dataSize } });
+        channelInfoListIter->second.publishedDataList.push_back({ userContext, *fireCallbackList, { data , data + dataSize } });
     }
     else
     {
-        channelInfoListIter->second.publishedDataList.push_back({ extDataProcessor, emptySubscriberList, { data , data + dataSize } });
+        channelInfoListIter->second.publishedDataList.push_back({ userContext, emptySubscriberList, { data , data + dataSize } });
     }
     ::LeaveCriticalSection(&channelInfoListSync_);
 
