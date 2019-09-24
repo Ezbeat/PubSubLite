@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <list>
 #include <thread>
@@ -40,9 +41,10 @@ enum class FireStatus
     kExit
 };
 
-typedef void(*SUBSCRIBER_CALLBACK)(_In_ const uint8_t* data, _In_ uint32_t dataSize);
+typedef void(*SUBSCRIBER_CALLBACK)(_In_ const uint8_t* data, _In_ uint32_t dataSize, _In_opt_ void* extDataProcessor);
 
-using PublishedData = std::pair<const std::vector<SUBSCRIBER_CALLBACK>, const std::vector<uint8_t>>; // Fired subscriber callback list(zero is all), Published data
+// External Data Process Pointer(optional), Fired subscriber callback list(optional), Published data
+using PublishedData = std::tuple<void*, const std::vector<SUBSCRIBER_CALLBACK>, const std::vector<uint8_t>>;
 struct ChannelInfo
 {
     ChannelInfo()
@@ -83,7 +85,13 @@ public:
     static Error ResumeFire(_In_ const std::wstring& channelName);
 
     // Publisher Method
-    static Error PublishData(_In_ const std::wstring& channelName, _In_ const uint8_t* data, _In_ uint32_t dataSize, _In_opt_ const std::vector<SUBSCRIBER_CALLBACK>* fireCallbackList = nullptr);
+    static Error PublishData(
+        _In_ const std::wstring& channelName,
+        _In_ const uint8_t* data,
+        _In_ uint32_t dataSize,
+        _In_opt_ void* extDataProcessor = nullptr,
+        _In_opt_ const std::vector<SUBSCRIBER_CALLBACK>* fireCallbackList = nullptr
+    );
 
     // Subscriber Method
     static Error RegisterSubscriber(_In_ const std::wstring& channelName, _In_ const SUBSCRIBER_CALLBACK subscriberCallback);
