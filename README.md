@@ -29,7 +29,7 @@ static Error RegisterSubscriber(
 ```
 * subscriberCallback  
 Callback function pointer to receive data.  
-`typedef void(*SUBSCRIBER_CALLBACK)(_In_ const uint8_t* data, _In_ uint32_t dataSize);`  
+`typedef void(*SUBSCRIBER_CALLBACK)(_In_ const uint8_t* data, _In_ uint32_t dataSize, _In_opt_ void* userContext);`  
 If published data is in the channel's buffer, the data is passed sequentially to the callback function at flush time.  
 
 **3. Send data to publish to the created channel.**
@@ -38,12 +38,16 @@ static Error PublishData(
   _In_ const std::wstring& channelName, 
   _In_ const uint8_t* data, 
   _In_ uint32_t dataSize, 
+  _In_opt_ void* userContext = nullptr,  
   _In_opt_ const std::vector<SUBSCRIBER_CALLBACK>* fireCallbackList = nullptr
 );
 ```
 As it is named Lite, we want to provide as simple a feature as possible.  
 Therefore, the data to be published can only be transferred as a buffer pointer, and the data size in the buffer.  
 The data passed is copied internally into "std::vector", and the allocated "std::vector" is added to the end of "std::list".
+
+* userContext  
+The value of this parameter is passed to the UserContext of the Subscriber Callback.
 
 * fireCallbackList  
 When passing published data to registered subscribers, this parameter selects the subscriber callback to be delivered.
