@@ -72,8 +72,9 @@ so you do not need to call UnregisterSubscriber before calling DeleteChannel.
 ## Etc method.
 * **UpdateChannel**  
 Change the flushTime and maxBufferedDataSize of already created channels.
-* **PauseFire, ResumeFire**  
-Pause or resume sending published data in the channel's buffer to the subscriber.
+* **Pause, Resume**  
+Pause or resume sending published data in the channel's buffer to the subscriber.  
+You can also clear published data in the buffer when calling Resume.
 * **GetFiredDataCount, GetLostDataCount**  
 Returns the number of data successfully sent to the subscriber and the number of data deleted from the buffer that could not be delivered to the subscriber.  
 If the buffer is full when data is published, old data is deleted from the buffer, and the number of data deleted is lost data count.
