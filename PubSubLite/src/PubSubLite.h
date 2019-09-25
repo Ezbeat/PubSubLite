@@ -80,10 +80,6 @@ public:
     static Error UpdateChannel(_In_ const std::wstring& channelName, _In_ uint32_t flushTime, _In_ uint32_t maxDataSize);
     static Error DeleteChannel(_In_ const std::wstring& channelName);
 
-    // Fire Method
-    static Error PauseFire(_In_ const std::wstring& channelName);
-    static Error ResumeFire(_In_ const std::wstring& channelName);
-
     // Publisher Method
     static Error PublishData(
         _In_ const std::wstring& channelName,
@@ -96,6 +92,10 @@ public:
     // Subscriber Method
     static Error RegisterSubscriber(_In_ const std::wstring& channelName, _In_ const SUBSCRIBER_CALLBACK subscriberCallback);
     static Error UnregisterSubscriber(_In_ const std::wstring& channelName, _In_ const SUBSCRIBER_CALLBACK subscriberCallback);
+
+    // Etc Method
+    static Error Pause(_In_ const std::wstring& channelName);
+    static Error Resume(_In_ const std::wstring& channelName, _In_opt_ bool clearBuffer = false);
 
     // Getter
     static Error GetFiredDataCount(_In_ const std::wstring& channelName, _Out_ uint32_t& firedDataCount);

@@ -60,6 +60,16 @@ int main(void)
             &extDataProcessor,
             &fireCallbackList
         );
+
+        // Test Pause, Resume
+        if (index == 50000)
+        {
+            EzPubSub::PubSubLite::Pause(channelName);
+        }
+        else if (index == 99996)
+        {
+            EzPubSub::PubSubLite::Resume(channelName, true);
+        }
     }
 
     Sleep(10000);
